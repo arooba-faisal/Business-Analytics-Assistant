@@ -1,9 +1,11 @@
 # Business-Analytics-Assistant
+
+## Project Overview
 A working MVP built for the Business Analytics Assistant challenge. The application enables business owners to connect multiple data sources, ask questions in plain English, and receive actionable insights with automatically selected visualizations.
 
 Designed for non-technical users, the system eliminates the need to write SQL or use complex BI tools by converting natural language into database queries and presenting results in an intuitive format.
 
-Features:
+## Features:
 - Connect multiple data sources
 - SQLite database
 - CSV file upload
@@ -14,7 +16,133 @@ Features:
 - Multi-branch analytics for restaurant businesses
 - Cross-source querying across connected datasets
 
-## 1. Project structure
+## Tech Stack:
+### Backend
+- Python
+- Flask
+- SQLite
+- Pandas
+
+### AI
+- OpenAI GPT-5.5
+- Claude Sonnet 5
+- Lovable.ai
+
+## Installation Steps
+
+1. Clone the repository.
+
+```bash
+git clone https://github.com/your-username/your-repository.git
+cd your-repository
+```
+
+2. Create a virtual environment.
+
+Windows
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+macOS / Linux
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Install the required dependencies.
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Create a `.env` file (or copy `.env.example`) and add your OpenAI API key.
+
+```env
+OPENAI_API_KEY=your_api_key
+```
+
+5. Generate the sample data.
+
+```bash
+python generate_data.py
+```
+
+This creates:
+
+- `data/branches.db`
+- `data/inventory.csv`
+
+---
+
+## How to Run the Project
+
+Start the Flask application.
+
+```bash
+python app.py
+```
+
+Open your browser and navigate to:
+
+```
+http://127.0.0.1:5000
+```
+
+### Demo Workflow
+
+1. Connect the SQLite database.
+2. Upload the provided `inventory.csv`.
+3. Ask questions in plain English, for example:
+   - Which branch had the lowest revenue last month?
+   - Show daily revenue trends for the last 30 days.
+   - Compare average order value across all branches.
+   - Flag branches where footfall dropped more than 20% week-over-week.
+   - Which inventory items are below their reorder level for the Faisalabad branch?
+
+The system automatically:
+- Converts the question into SQL
+- Executes the query
+- Selects the most appropriate visualization
+- Generates a plain-English business insight
+
+---
+
+## AI Models Used
+
+- **OpenAI GPT-5.5** – Natural language to SQL conversion and business insight generation.
+- **Claude Sonnet 5** – Assisted with development, implementation, debugging, and code refinement during the project.
+
+---
+
+## Data Connectors Implemented
+
+### SQLite Connector
+Loads restaurant operational data including:
+- Branches
+- Sales
+- Footfall
+
+### CSV Connector
+
+Allows users to upload inventory data, which is loaded into the shared in-memory database.
+Both connectors are unified into a single in-memory SQLite database, enabling queries across multiple connected datasets.
+
+---
+
+## Known Limitations
+
+- Currently supports only SQLite and CSV connectors.
+- Requires an OpenAI API key to use natural language querying.
+- Sample data is generated for demonstration purposes.
+- Cross-source queries depend on compatible schemas between connected datasets.
+- Visualization selection is rule-based and currently supports KPI cards, bar charts, line charts, pie charts, ranked tables, and geographic views where applicable.
+- No user authentication or persistent storage of uploaded datasets.
+  
+## Project structure
 
 ```
 nyrix-hackathon/
@@ -32,57 +160,3 @@ nyrix-hackathon/
     ├── style.css
     └── app.js
 ```
-
-## 2. Setup in VS Code
-
-1. Open this folder in VS Code (`File → Open Folder`).
-2. Open a terminal in VS Code (`` Ctrl+` ``) and create a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate        # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-3. Set your API key:
-   ```bash
-   cp .env.example .env
-   ```
-   Open `.env` and paste your **new, rotated** OpenAI key:
-   ```
-   OPENAI_API_KEY=sk-...your-new-key...
-   ```
-4. Generate the sample data (only needed once, already done, but re-run
-   any time you want to regenerate it):
-   ```bash
-   python3 generate_data.py
-   ```
-   This creates `data/branches.db` (6-branch food chain, 3 months of daily
-   sales + footfall) and `data/inventory.csv` (stock levels per branch).
-
-## 3. Run it
-
-```bash
-python3 app.py
-```
-
-Open **http://127.0.0.1:5000** in your browser.
-
-## 4. Demo flow
-
-1. **Connect sources** — click "Connect SQLite" then "Connect CSV"(choose `data/inventory.csv` in the file picker, or upload your own CSV with the same columns). Both connectors load into one shared in-memory database, which is what lets a single question span both sources.
-2. **Ask questions** — type your own, or click a suggestion chip:
-   - *"Which of my branches had the lowest revenue last month?"* → bar chart
-   - *"Show me daily revenue trend for the last 30 days across all branches."* → line chart
-   - *"Compare average order value across all locations this quarter."* → bar/table
-   - *"Flag any branch where footfall dropped more than 20% week-over-week."* → table/insight (the data has a real, deliberate footfall crash at the Faisalabad branch in the last two weeks, so this returns something real)
-   - *"Which items in the inventory are below their reorder level for the Faisalabad branch?"* → **cross-source** query (joins the CSV inventory table with branch names from the SQLite source) — use this one to show off the bonus points
-3. **Architecture walkthrough** (talking points for the 4–5 min mark):
-   - Both connectors normalize into one shared SQLite schema in memory, so the LLM only ever reasons about one schema and can naturally JOIN across sources.
-   - `nl_engine.py` turns the question into a single read-only `SELECT`(the SQL is guarded — no INSERT/UPDATE/DELETE/DROP allowed).
-   - `chart_logic.py` is **rule-based, not another LLM call** — it looks at the shape of the result set (date column? category column? one row? one number? how many rows?) and picks kpi / bar / line / pie / table / geo. This is deterministic and fast, and you can point at the code during judging to show the actual decision logic.
-   - A second, small LLM call turns the result rows into a 1–2 sentence plain-English insight.
-
-## 5. Troubleshooting
-
-- `OPENAI_API_KEY is not set` → you skipped step 2.3, or forgot to restart `python3 app.py` after editing `.env`.
-- `branches.db not found` → run `python3 generate_data.py` from the project root first.
-- CORS/blank page → make sure you're opening `http://127.0.0.1:5000` (the Flask URL), not opening `static/index.html` directly as a file.
